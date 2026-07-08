@@ -1,11 +1,22 @@
 package com.jn.numrise.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,17 +51,17 @@ fun HelpScreen(
                 title = "Objective",
                 description = "Tap the numbers in the grid in ascending order starting from 1. Clear all numbers to finish the level!"
             )
-            
+
             HelpSection(
                 title = "Hints & Undos",
                 description = "Stuck? Use a Hint (10 coins) to see the next number. Made a mistake? Use Undo (5 coins) to revert your last correct move."
             )
-            
+
             HelpSection(
                 title = "Earning Coins",
                 description = "Complete levels quickly to earn more coins. You can also buy coin packs in the Shop."
             )
-            
+
             HelpSection(
                 title = "Progression",
                 description = "Unlock new levels by completing the previous ones. Higher levels have larger grids and more numbers!"

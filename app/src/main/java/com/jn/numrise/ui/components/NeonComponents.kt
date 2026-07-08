@@ -61,7 +61,7 @@ fun NeonButton(
     fontSize: Int = 16
 ) {
     val soundManager = LocalSoundManager.current
-    
+
     Button(
         onClick = {
             soundManager?.play("tap")

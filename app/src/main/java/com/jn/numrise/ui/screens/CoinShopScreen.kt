@@ -23,9 +23,9 @@ import com.jn.numrise.ui.components.*
 import com.jn.numrise.ui.theme.*
 
 data class CoinPack(
-    val id: String, 
-    val amount: Int, 
-    val price: String, 
+    val id: String,
+    val amount: Int,
+    val price: String,
     val color: Color,
     val iconRes: Int
 )
@@ -54,7 +54,7 @@ fun CoinShopScreen(
                             fontSize = 20,
                             modifier = Modifier.align(Alignment.Center)
                         )
-                        
+
                         Row(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
@@ -121,9 +121,9 @@ fun RetroCoinPackItem(pack: CoinPack, onBuy: () -> Unit) {
                     .size(80.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
-            
+
             Spacer(modifier = Modifier.width(20.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 NeonText(
                     text = "${pack.amount} COINS",
@@ -137,9 +137,9 @@ fun RetroCoinPackItem(pack: CoinPack, onBuy: () -> Unit) {
                     fontSize = 10,
                     color = pack.color
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 NeonButton(
                     text = "PURCHASE",
                     onClick = onBuy,

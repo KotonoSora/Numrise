@@ -3,7 +3,20 @@ package com.jn.numrise.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -15,8 +28,13 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,8 +47,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jn.numrise.model.GameStatus
 import com.jn.numrise.model.Tile
-import com.jn.numrise.ui.components.*
-import com.jn.numrise.ui.theme.*
+import com.jn.numrise.ui.components.NeonButton
+import com.jn.numrise.ui.components.NeonIconButton
+import com.jn.numrise.ui.components.NeonText
+import com.jn.numrise.ui.theme.NeonCyan
+import com.jn.numrise.ui.theme.NeonGreen
+import com.jn.numrise.ui.theme.NeonPink
+import com.jn.numrise.ui.theme.NeonPurple
+import com.jn.numrise.ui.theme.NeonYellow
+import com.jn.numrise.ui.theme.PressStart2P
 import com.jn.numrise.viewmodel.GameViewModel
 
 @Composable
@@ -101,7 +126,9 @@ fun GameTopBar(
     coins: Int,
     onPauseClick: () -> Unit
 ) {
-    Column(modifier = Modifier.statusBarsPadding().background(Color.Black)) {
+    Column(modifier = Modifier
+        .statusBarsPadding()
+        .background(Color.Black)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,18 +137,23 @@ fun GameTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = NeonYellow, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Default.MonetizationOn,
+                    contentDescription = null,
+                    tint = NeonYellow,
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(modifier = Modifier.width(4.dp))
                 NeonText(text = coins.toString(), fontSize = 12, color = NeonYellow)
             }
-            
+
             NeonIconButton(
                 icon = Icons.Default.Pause,
                 onClick = onPauseClick,
                 tint = NeonPink
             )
         }
-        
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -159,9 +191,12 @@ fun GameTopBar(
                 )
             }
         }
-        
+
         // Neon divider
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(NeonCyan.copy(alpha = 0.3f)))
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(NeonCyan.copy(alpha = 0.3f)))
     }
 }
 
@@ -171,7 +206,8 @@ fun NumberTile(
     isHighlighted: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (tile.isTapped) Color.DarkGray.copy(alpha = 0.3f) else tile.color.copy(alpha = 0.8f)
+    val backgroundColor =
+        if (tile.isTapped) Color.DarkGray.copy(alpha = 0.3f) else tile.color.copy(alpha = 0.8f)
     val borderColor = if (isHighlighted) Color.White else tile.color
     val glowColor = if (isHighlighted) Color.White else tile.color
 
@@ -213,8 +249,11 @@ fun GameBottomBar(
 ) {
     Column(modifier = Modifier.background(Color.Black)) {
         // Neon divider
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(NeonCyan.copy(alpha = 0.3f)))
-        
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(NeonCyan.copy(alpha = 0.3f)))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -1,7 +1,16 @@
 package com.jn.numrise.model
 
 import androidx.compose.ui.graphics.Color
-import com.jn.numrise.ui.theme.*
+import com.jn.numrise.ui.theme.NeonCyan
+import com.jn.numrise.ui.theme.NeonGreen
+import com.jn.numrise.ui.theme.NeonPink
+import com.jn.numrise.ui.theme.NeonYellow
+import com.jn.numrise.ui.theme.TileBlue
+import com.jn.numrise.ui.theme.TileCyan
+import com.jn.numrise.ui.theme.TileGreen
+import com.jn.numrise.ui.theme.TileOrange
+import com.jn.numrise.ui.theme.TilePink
+import com.jn.numrise.ui.theme.TilePurple
 
 data class Tile(
     val id: Int,

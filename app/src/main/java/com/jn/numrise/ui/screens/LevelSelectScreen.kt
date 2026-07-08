@@ -3,7 +3,17 @@ package com.jn.numrise.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -12,16 +22,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.jn.numrise.data.LevelEntity
-import com.jn.numrise.ui.components.*
-import com.jn.numrise.ui.theme.*
+import com.jn.numrise.ui.components.NeonIconButton
+import com.jn.numrise.ui.components.NeonText
+import com.jn.numrise.ui.components.NeonTitle
+import com.jn.numrise.ui.theme.NeonCyan
+import com.jn.numrise.ui.theme.NeonYellow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +93,7 @@ fun LevelSelectScreen(
 fun LevelCard(level: LevelEntity, onClick: () -> Unit) {
     val borderColor = if (level.isUnlocked) NeonCyan else Color.DarkGray
     val backgroundColor = if (level.isUnlocked) NeonCyan.copy(alpha = 0.1f) else Color.Black
-    
+
     Box(
         modifier = Modifier
             .aspectRatio(1f)
@@ -106,7 +123,12 @@ fun LevelCard(level: LevelEntity, onClick: () -> Unit) {
                 }
             }
         } else {
-            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color.Gray, modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Lock,
+                contentDescription = "Locked",
+                tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

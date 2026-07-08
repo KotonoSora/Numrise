@@ -9,7 +9,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@Database(entities = [LevelEntity::class, PlayerStatsEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [LevelEntity::class, PlayerStatsEntity::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun levelDao(): LevelDao
 
@@ -24,8 +28,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "numrise_database"
                 )
-                .addCallback(AppDatabaseCallback(scope))
-                .build()
+                    .addCallback(AppDatabaseCallback(scope))
+                    .build()
                 INSTANCE = instance
                 instance
             }
@@ -34,7 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     private class AppDatabaseCallback(
         private val scope: CoroutineScope
-    ) : RoomDatabase.Callback() {
+    ) : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             INSTANCE?.let { database ->

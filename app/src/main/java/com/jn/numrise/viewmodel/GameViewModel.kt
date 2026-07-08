@@ -12,11 +12,17 @@ import com.jn.numrise.model.Tile
 import com.jn.numrise.model.getTileColors
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManager? = null) : ViewModel() {
+class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManager? = null) :
+    ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -33,7 +39,7 @@ class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManag
     fun startGame(difficulty: Difficulty) {
         val numbers = (1..difficulty.maxNumber).shuffled()
         val colors = getTileColors()
-        
+
         val tiles = numbers.mapIndexed { index, number ->
             Tile(
                 id = index,
@@ -70,7 +76,7 @@ class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManag
         val totalTiles = level.gridSize * level.gridSize
         val numbers = (1..totalTiles).shuffled()
         val colors = getTileColors()
-        
+
         val tiles = numbers.mapIndexed { index, number ->
             Tile(
                 id = index,
@@ -138,7 +144,7 @@ class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManag
             val updatedTiles = currentState.tiles.map {
                 if (it.id == tile.id) it.copy(isTapped = true) else it
             }
-            
+
             val nextTarget = currentState.currentTarget + 1
             val isFinished = nextTarget > currentState.tiles.size
 
@@ -165,13 +171,13 @@ class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManag
         timerJob?.cancel()
         soundManager?.play("win")
         val currentState = _uiState.value
-        
+
         // Calculate bonus and stars
         val timeLimit = currentState.currentDifficulty?.timeLimit ?: 60
         val timeElapsed = timeLimit - currentState.timerSeconds
         val timeBonus = currentState.timerSeconds * 10
         val finalScore = currentState.score + timeBonus
-        
+
         val stars = when {
             currentState.timerSeconds > timeLimit * 0.6 -> 3
             currentState.timerSeconds > timeLimit * 0.3 -> 2
@@ -255,7 +261,11 @@ class GameViewModel(private val levelDao: LevelDao, var soundManager: SoundManag
 
     fun restartGame() {
         val state = _uiState.value
-        state.currentDifficulty?.let { startGame(it) } ?: state.currentLevelEntity?.let { startGame(it) }
+        state.currentDifficulty?.let { startGame(it) } ?: state.currentLevelEntity?.let {
+            startGame(
+                it
+            )
+        }
     }
 
     fun resetToIdle() {
@@ -280,5 +290,10 @@ data class GameUiState(
     val highlightedTileId: Int? = null
 ) {
     val timerFormatted: String
-        get() = String.format(Locale.getDefault(), "%02d:%02d", timerSeconds / 60, timerSeconds % 60)
+        get() = String.format(
+            Locale.getDefault(),
+            "%02d:%02d",
+            timerSeconds / 60,
+            timerSeconds % 60
+        )
 }
