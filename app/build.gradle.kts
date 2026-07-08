@@ -1,10 +1,3 @@
-import java.io.File
-import java.net.URI
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import kotlin.math.PI
-import kotlin.math.sin
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -12,13 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.kotonosora.numrise"
-    compileSdk = 36
+    namespace = "com.jn.numrise"
+    compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.kotonosora.numrise"
+        applicationId = "com.jn.numrise"
         minSdk = 24
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -27,7 +19,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -89,82 +82,4 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     "ksp"(libs.androidx.room.compiler)
     "ksp"(libs.moshi.kotlin.codegen)
-}
-
-tasks.register("generateAssets") {
-    group = "assets"
-    description = "Downloads font and generates sound effects"
-
-    val fontFile = file("src/main/res/font/press_start_2p.ttf")
-    val rawDir = file("src/main/res/raw")
-
-    doLast {
-        // Create directories if they don't exist
-        fontFile.parentFile.mkdirs()
-        rawDir.mkdirs()
-
-        // 1. Download Font
-        println("Downloading font...")
-        try {
-            URI("https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf").toURL().openStream().use { input ->
-                fontFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-        } catch (e: Exception) {
-            println("Failed to download font: \${e.message}")
-        }
-
-        // 2. Generate Sounds
-        println("Generating sounds...")
-        generateWavFile(File(rawDir, "tap.wav"), 880.0, 0.1)     // A5, 100ms
-        generateWavFile(File(rawDir, "error.wav"), 220.0, 0.3)   // A3, 300ms
-        generateWavFile(File(rawDir, "win.wav"), listOf(440.0, 554.37, 659.25, 880.0), 0.5) // A4, C#5, E5, A5
-        generateWavFile(File(rawDir, "lose.wav"), listOf(440.0, 349.23, 293.66, 220.0), 0.5) // A4, F4, D4, A3
-    }
-}
-
-fun generateWavFile(file: File, frequencies: Any, duration: Double) {
-    val sampleRate = 44100
-    val numSamples = (duration * sampleRate).toInt()
-    val data = ShortArray(numSamples)
-    
-    val freqList = if (frequencies is List<*>) {
-        @Suppress("UNCHECKED_CAST")
-        frequencies as List<Double>
-    } else {
-        listOf(frequencies as Double)
-    }
-    val samplesPerFreq = numSamples / freqList.size
-
-    for (i in 0 until numSamples) {
-        val freqIndex = (i / samplesPerFreq).coerceAtMost(freqList.size - 1)
-        val freq = freqList[freqIndex]
-        val time = i.toDouble() / sampleRate
-        // Basic square wave for retro feel
-        val value = if (sin(2.0 * PI * freq * time) > 0) Short.MAX_VALUE / 2 else -Short.MAX_VALUE / 2
-        data[i] = value.toShort()
-    }
-
-    file.outputStream().use { out ->
-        // RIFF header
-        out.write("RIFF".toByteArray())
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(36 + numSamples * 2).array())
-        out.write("WAVE".toByteArray())
-        // fmt chunk
-        out.write("fmt ".toByteArray())
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(16).array())
-        out.write(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(1).array()) // PCM
-        out.write(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(1).array()) // Mono
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleRate).array())
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleRate * 2).array())
-        out.write(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(2).array())
-        out.write(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(16).array())
-        // data chunk
-        out.write("data".toByteArray())
-        out.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(numSamples * 2).array())
-        val buffer = ByteBuffer.allocate(numSamples * 2).order(ByteOrder.LITTLE_ENDIAN)
-        for (sample in data) buffer.putShort(sample)
-        out.write(buffer.array())
-    }
 }
