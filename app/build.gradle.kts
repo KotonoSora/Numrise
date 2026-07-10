@@ -1,16 +1,18 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.jn.numrise"
     compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jn.numrise"
-        minSdk = 24
+        minSdk = 30
         versionCode = 1
         versionName = "1.0.0"
 
