@@ -12,7 +12,7 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.jn.numrise.data.LevelDao
+import com.jn.numrise.domain.repository.GameRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 class BillingManager(
     private val context: Context,
     private val scope: CoroutineScope,
-    private val levelDao: LevelDao
+    private val repository: GameRepository
 ) : PurchasesUpdatedListener {
 
     private val billingClient = BillingClient.newBuilder(context)
@@ -135,9 +135,9 @@ class BillingManager(
 
     private suspend fun updateCoinsInDb(amount: Int) {
         withContext(Dispatchers.IO) {
-            val currentStats = levelDao.getPlayerStats().first()
+            val currentStats = repository.getPlayerStats().first()
             val currentCoins = currentStats?.coins ?: 0
-            levelDao.updateCoins(currentCoins + amount)
+            repository.updateCoins(currentCoins + amount)
         }
     }
 }

@@ -12,32 +12,26 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.jn.numrise.audio.LocalSoundManager
-import com.jn.numrise.audio.SoundManager
 import com.jn.numrise.ui.navigation.NumriseNavGraph
 import com.jn.numrise.ui.theme.NumriseTheme
 import com.jn.numrise.viewmodel.GameViewModel
 import com.jn.numrise.viewmodel.GameViewModelFactory
 
 class MainActivity : ComponentActivity() {
-    private var soundManager: SoundManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        soundManager = SoundManager(this)
+        val container = (application as NumriseApplication).container
 
         setContent {
             NumriseTheme {
-                CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                CompositionLocalProvider(LocalSoundManager provides container.soundManager) {
                     val navController = rememberNavController()
-                    val app = (application as NumriseApplication)
                     val gameViewModel: GameViewModel = viewModel(
-                        factory = GameViewModelFactory(app.levelDao)
+                        factory = GameViewModelFactory(container)
                     )
-
-                    // Inject soundManager into ViewModel
-                    gameViewModel.soundManager = soundManager
 
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
@@ -52,10 +46,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        soundManager?.release()
     }
 }

@@ -19,6 +19,7 @@ import com.jn.numrise.ui.screens.LevelSelectScreen
 import com.jn.numrise.ui.screens.PauseScreen
 import com.jn.numrise.ui.screens.ResultScreen
 import com.jn.numrise.ui.screens.SettingsScreen
+import com.jn.numrise.viewmodel.GameIntent
 import com.jn.numrise.viewmodel.GameViewModel
 
 sealed class Screen(val route: String) {
@@ -51,7 +52,7 @@ fun NumriseNavGraph(
         composable(Screen.DifficultySelect.route) {
             DifficultySelectScreen(
                 onDifficultySelected = { difficulty ->
-                    gameViewModel.startGame(difficulty)
+                    gameViewModel.onIntent(GameIntent.StartWithDifficulty(difficulty))
                     navController.navigate(Screen.GamePlay.route)
                 },
                 onBack = { navController.popBackStack() }
@@ -69,15 +70,15 @@ fun NumriseNavGraph(
         composable(Screen.Pause.route) {
             PauseScreen(
                 onResume = {
-                    gameViewModel.resumeGame()
+                    gameViewModel.onIntent(GameIntent.ResumeGame)
                     navController.popBackStack()
                 },
                 onRestart = {
-                    gameViewModel.restartGame()
+                    gameViewModel.onIntent(GameIntent.RestartGame)
                     navController.popBackStack()
                 },
                 onQuit = {
-                    gameViewModel.resetToIdle()
+                    gameViewModel.onIntent(GameIntent.ResetToIdle)
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
@@ -91,19 +92,19 @@ fun NumriseNavGraph(
                 score = uiState.score,
                 time = uiState.timerFormatted,
                 onNextLevel = {
-                    gameViewModel.resetToIdle()
+                    gameViewModel.onIntent(GameIntent.ResetToIdle)
                     navController.navigate(Screen.DifficultySelect.route) {
                         popUpTo(Screen.Home.route)
                     }
                 },
                 onRestart = {
-                    gameViewModel.restartGame()
+                    gameViewModel.onIntent(GameIntent.RestartGame)
                     navController.navigate(Screen.GamePlay.route) {
                         popUpTo(Screen.Home.route)
                     }
                 },
                 onHome = {
-                    gameViewModel.resetToIdle()
+                    gameViewModel.onIntent(GameIntent.ResetToIdle)
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
@@ -112,11 +113,11 @@ fun NumriseNavGraph(
         }
 
         composable(Screen.LevelSelect.route) {
-            val levels by gameViewModel.allLevels.collectAsState()
+            val uiState by gameViewModel.uiState.collectAsState()
             LevelSelectScreen(
-                levels = levels,
+                levels = uiState.levels,
                 onLevelSelected = { level ->
-                    gameViewModel.startGame(level)
+                    gameViewModel.onIntent(GameIntent.StartWithLevel(level))
                     navController.navigate(Screen.GamePlay.route)
                 },
                 onBack = { navController.popBackStack() }
@@ -124,10 +125,10 @@ fun NumriseNavGraph(
         }
 
         composable(Screen.CoinShop.route) {
-            val stats by gameViewModel.playerStats.collectAsState()
+            val uiState by gameViewModel.uiState.collectAsState()
             CoinShopScreen(
-                coins = stats?.coins ?: 0,
-                onBuyPack = { pack -> gameViewModel.buyCoins(pack.amount) },
+                coins = uiState.coins,
+                onBuyPack = { pack -> gameViewModel.onIntent(GameIntent.BuyCoins(pack.amount)) },
                 onBack = { navController.popBackStack() }
             )
         }

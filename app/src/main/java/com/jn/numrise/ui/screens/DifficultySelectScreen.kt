@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.jn.numrise.model.Difficulty
+import com.jn.numrise.domain.model.Difficulty
 import com.jn.numrise.ui.components.NeonButton
 import com.jn.numrise.ui.components.NeonIconButton
 import com.jn.numrise.ui.components.NeonTitle

@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.jn.numrise.data.LevelEntity
+import com.jn.numrise.domain.model.Level
 import com.jn.numrise.ui.components.NeonIconButton
 import com.jn.numrise.ui.components.NeonText
 import com.jn.numrise.ui.components.NeonTitle
@@ -43,8 +43,8 @@ import com.jn.numrise.ui.theme.NeonYellow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LevelSelectScreen(
-    levels: List<LevelEntity>,
-    onLevelSelected: (LevelEntity) -> Unit,
+    levels: List<Level>,
+    onLevelSelected: (Level) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -90,7 +90,7 @@ fun LevelSelectScreen(
 }
 
 @Composable
-fun LevelCard(level: LevelEntity, onClick: () -> Unit) {
+fun LevelCard(level: Level, onClick: () -> Unit) {
     val borderColor = if (level.isUnlocked) NeonCyan else Color.DarkGray
     val backgroundColor = if (level.isUnlocked) NeonCyan.copy(alpha = 0.1f) else Color.Black
 

@@ -21,6 +21,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jn.numrise.viewmodel.GameIntent
 import com.jn.numrise.viewmodel.GameViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +38,7 @@ fun SettingsScreen(
     viewModel: GameViewModel,
     onBack: () -> Unit
 ) {
-    var soundEnabled by remember { mutableStateOf(viewModel.soundManager?.isEnabled ?: true) }
+    val uiState by viewModel.uiState.collectAsState()
     var timerVisible by remember { mutableStateOf(true) }
 
     Scaffold(
@@ -58,9 +60,8 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingsToggle("Sound Effects", soundEnabled) {
-                soundEnabled = it
-                viewModel.soundManager?.isEnabled = it
+            SettingsToggle("Sound Effects", uiState.soundEnabled) {
+                viewModel.onIntent(GameIntent.SetSoundEnabled(it))
             }
             SettingsToggle("Show Timer", timerVisible) { timerVisible = it }
 

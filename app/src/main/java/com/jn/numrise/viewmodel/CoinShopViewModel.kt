@@ -4,17 +4,19 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jn.numrise.billing.BillingManager
-import com.jn.numrise.data.LevelDao
+import com.jn.numrise.domain.repository.GameRepository
+import com.jn.numrise.domain.usecase.UpdatePlayerStatsUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 
 class CoinShopViewModel(
     private val billingManager: BillingManager,
-    private val levelDao: LevelDao
+    private val repository: GameRepository,
+    private val updatePlayerStatsUseCase: UpdatePlayerStatsUseCase
 ) : ViewModel() {
 
     val products = billingManager.products
-    val playerStats = levelDao.getPlayerStats()
+    val playerStats = repository.getPlayerStats()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun buyPack(activity: Activity, productId: String) {

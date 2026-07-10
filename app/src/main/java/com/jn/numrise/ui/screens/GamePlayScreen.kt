@@ -45,8 +45,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jn.numrise.model.GameStatus
-import com.jn.numrise.model.Tile
+import com.jn.numrise.domain.model.GameStatus
+import com.jn.numrise.domain.model.Tile
 import com.jn.numrise.ui.components.NeonButton
 import com.jn.numrise.ui.components.NeonIconButton
 import com.jn.numrise.ui.components.NeonText
@@ -56,6 +56,7 @@ import com.jn.numrise.ui.theme.NeonPink
 import com.jn.numrise.ui.theme.NeonPurple
 import com.jn.numrise.ui.theme.NeonYellow
 import com.jn.numrise.ui.theme.PressStart2P
+import com.jn.numrise.viewmodel.GameIntent
 import com.jn.numrise.viewmodel.GameViewModel
 
 @Composable
@@ -65,7 +66,6 @@ fun GamePlayScreen(
     onFinished: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val stats by viewModel.playerStats.collectAsState()
 
     // Navigation triggers
     LaunchedEffect(uiState.status) {
@@ -79,17 +79,17 @@ fun GamePlayScreen(
             GameTopBar(
                 timerText = uiState.timerFormatted,
                 score = uiState.score,
-                coins = stats?.coins ?: 0,
+                coins = uiState.coins,
                 onPauseClick = {
-                    viewModel.pauseGame()
+                    viewModel.onIntent(GameIntent.PauseGame)
                     onPause()
                 }
             )
         },
         bottomBar = {
             GameBottomBar(
-                onHint = { viewModel.useHint() },
-                onUndo = { viewModel.useUndo() }
+                onHint = { viewModel.onIntent(GameIntent.UseHint) },
+                onUndo = { viewModel.onIntent(GameIntent.UseUndo) }
             )
         },
         containerColor = Color.Black
@@ -111,7 +111,7 @@ fun GamePlayScreen(
                     NumberTile(
                         tile = tile,
                         isHighlighted = tile.id == uiState.highlightedTileId,
-                        onClick = { viewModel.onTileTapped(tile) }
+                        onClick = { viewModel.onIntent(GameIntent.TileTapped(tile)) }
                     )
                 }
             }
