@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jn.numrise.data.HistoryEntity
+import com.jn.numrise.domain.model.History
 import com.jn.numrise.ui.components.NeonHeaderBar
 import com.jn.numrise.ui.components.NeonText
 import com.jn.numrise.ui.navigation.Screen
@@ -38,7 +38,7 @@ import java.util.Locale
 @Composable
 fun LeaderboardScreen(
     coins: Int,
-    history: List<HistoryEntity>,
+    history: List<History>,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -111,7 +111,7 @@ fun LeaderboardScreen(
 }
 
 @Composable
-fun HistoryItem(entry: HistoryEntity) {
+fun HistoryItem(entry: History) {
     val date = Date(entry.date)
     val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
     val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
@@ -174,14 +174,14 @@ fun HistoryItem(entry: HistoryEntity) {
 @Composable
 fun LeaderboardScreenPreview() {
     val mockHistory = listOf(
-        HistoryEntity(date = System.currentTimeMillis(), score = 15000, reward = 50, isWin = true),
-        HistoryEntity(
+        History(date = System.currentTimeMillis(), score = 15000, reward = 50, isWin = true),
+        History(
             date = System.currentTimeMillis() - 86400000,
             score = 8000,
             reward = 20,
             isWin = true
         ),
-        HistoryEntity(
+        History(
             date = System.currentTimeMillis() - 172800000,
             score = 1200,
             reward = 0,

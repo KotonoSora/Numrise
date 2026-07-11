@@ -58,6 +58,28 @@ class StartGameUseCase {
             currentLevel = level
         )
     }
+
+    fun executeDailyChallenge(): GameInitialState {
+        val totalTiles = 16 // 4x4
+        val numbers = (1..totalTiles).shuffled()
+        val colors = getTileColors()
+
+        val tiles = numbers.mapIndexed { index, number ->
+            Tile(
+                id = index,
+                number = number,
+                color = colors[index % colors.size]
+            )
+        }
+
+        return GameInitialState(
+            tiles = tiles,
+            gridSize = 4,
+            currentTarget = 1,
+            timerSeconds = 40,
+            status = GameStatus.PLAYING
+        )
+    }
 }
 
 data class GameInitialState(

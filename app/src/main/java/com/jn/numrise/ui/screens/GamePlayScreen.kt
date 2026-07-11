@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Timer
@@ -31,6 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,7 +82,8 @@ fun GamePlayScreen(
         onTileClick = { viewModel.onIntent(GameIntent.TileTapped(it)) },
         onShop = onShop,
         onHint = { viewModel.onIntent(GameIntent.UseHint) },
-        onUndo = { viewModel.onIntent(GameIntent.UseUndo) }
+        onUndo = { viewModel.onIntent(GameIntent.UseUndo) },
+        onAddTime = { viewModel.onIntent(GameIntent.BuyExtraTime) }
     )
 }
 
@@ -93,7 +98,8 @@ fun GamePlayContent(
     onTileClick: (Tile) -> Unit,
     onShop: () -> Unit,
     onHint: () -> Unit,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
+    onAddTime: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -103,7 +109,8 @@ fun GamePlayContent(
                 coins = coins,
                 onBuyCoins = onShop,
                 onHint = onHint,
-                onUndo = onUndo
+                onUndo = onUndo,
+                onAddTime = onAddTime
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -144,7 +151,8 @@ fun GameTopBar(
     coins: Int,
     onBuyCoins: () -> Unit,
     onHint: () -> Unit,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
+    onAddTime: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -201,20 +209,30 @@ fun GameTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             NeonAssistButton(
                 icon = Icons.Default.Lightbulb,
-                label = "HINT (50)",
+                label = "HINT",
                 color = NeonYellow,
+                enabled = coins >= 50,
                 onClick = onHint,
                 modifier = Modifier.weight(1f)
             )
             NeonAssistButton(
                 icon = Icons.AutoMirrored.Filled.Undo,
-                label = "UNDO (50)",
+                label = "UNDO",
                 color = NeonPurple,
+                enabled = coins >= 50,
                 onClick = onUndo,
+                modifier = Modifier.weight(1f)
+            )
+            NeonAssistButton(
+                icon = Icons.Default.Add,
+                label = "60s",
+                color = NeonCyan,
+                enabled = coins >= 30,
+                onClick = onAddTime,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -256,7 +274,7 @@ fun NumberTile(
                 fontSize = 20,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                hasShadow = true,
+                hasShadow = false,
                 autoResize = true,
                 maxLines = 1,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -271,16 +289,26 @@ fun NeonAssistButton(
     label: String,
     color: Color,
     onClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    var lastClickTime by remember { mutableStateOf(0L) }
+
     NeonButton(
         text = label,
-        onClick = onClick,
+        onClick = {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastClickTime > 500) {
+                lastClickTime = currentTime
+                onClick()
+            }
+        },
         color = color,
         icon = icon,
         height = 40,
-        fontSize = 9,
-        modifier = modifier
+        fontSize = 10,
+        enabled = enabled,
+        modifier = modifier,
     )
 }
 
@@ -301,7 +329,8 @@ fun GamePlayScreenPreview() {
             onTileClick = {},
             onShop = {},
             onHint = {},
-            onUndo = {}
+            onUndo = {},
+            onAddTime = {}
         )
     }
 }

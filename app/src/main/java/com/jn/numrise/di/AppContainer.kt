@@ -6,6 +6,7 @@ import com.jn.numrise.billing.BillingManager
 import com.jn.numrise.data.AppDatabase
 import com.jn.numrise.data.repository.GameRepositoryImpl
 import com.jn.numrise.domain.repository.GameRepository
+import com.jn.numrise.domain.usecase.FinishGameUseCase
 import com.jn.numrise.domain.usecase.ProcessTileTapUseCase
 import com.jn.numrise.domain.usecase.StartGameUseCase
 import com.jn.numrise.domain.usecase.UpdatePlayerStatsUseCase
@@ -39,6 +40,10 @@ class AppContainer(private val context: Context) {
 
     val processTileTapUseCase: ProcessTileTapUseCase by lazy {
         ProcessTileTapUseCase()
+    }
+
+    val finishGameUseCase: FinishGameUseCase by lazy {
+        FinishGameUseCase()
     }
 
     val updatePlayerStatsUseCase: UpdatePlayerStatsUseCase by lazy {

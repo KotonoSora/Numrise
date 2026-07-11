@@ -1,9 +1,7 @@
 package com.jn.numrise.ui.components
 
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,31 +33,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jn.numrise.audio.LocalSoundManager
 import com.jn.numrise.ui.theme.NeonCyan
 import com.jn.numrise.ui.theme.NeonYellow
+import com.jn.numrise.ui.theme.NumriseTheme
 import com.jn.numrise.ui.theme.PressStart2P
-
-/**
- * Custom modifier that automatically plays a tap sound when clicked.
- */
-fun Modifier.neonClickable(
-    enabled: Boolean = true,
-    onClick: () -> Unit
-): Modifier = composed {
-    val soundManager = LocalSoundManager.current
-    this.clickable(
-        enabled = enabled,
-        interactionSource = remember { MutableInteractionSource() },
-        indication = LocalIndication.current,
-        onClick = {
-            soundManager?.play("tap")
-            onClick()
-        }
-    )
-}
 
 @Composable
 fun NeonHeaderBar(
@@ -73,7 +54,7 @@ fun NeonHeaderBar(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -97,8 +78,9 @@ fun NeonHeaderBar(
         }
 
         Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(end = 16.dp)
+            modifier = Modifier.padding(end = 8.dp)
         ) {
             NeonText(text = "$coins", fontSize = 14, color = NeonYellow)
             Spacer(modifier = Modifier.width(8.dp))
@@ -110,6 +92,36 @@ fun NeonHeaderBar(
         }
     }
 
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F111A)
+@Composable
+fun NeonHeaderBarPreview() {
+    NumriseTheme {
+        Surface {
+            NeonHeaderBar(title = "sample", coins = 100, onShop = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F111A)
+@Composable
+fun NeonButtonPreview() {
+    NumriseTheme {
+        Surface(modifier = Modifier.padding(16.dp)) {
+            NeonButton(text = "TAP ME", onClick = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0F111A)
+@Composable
+fun NeonTextPreview() {
+    NumriseTheme {
+        Surface(modifier = Modifier.padding(16.dp)) {
+            NeonText(text = "Neon Text", color = NeonCyan, hasShadow = true)
+        }
+    }
 }
 
 @Composable
@@ -200,7 +212,7 @@ fun NeonTitle(
         autoResize = autoResize,
         maxLines = 1,
         textAlign = TextAlign.Center,
-        hasShadow = true
+        hasShadow = false
     )
 }
 

@@ -12,6 +12,7 @@ class GameViewModelFactory(private val container: AppContainer) : ViewModelProvi
                     repository = container.gameRepository,
                     startGameUseCase = container.startGameUseCase,
                     processTileTapUseCase = container.processTileTapUseCase,
+                    finishGameUseCase = container.finishGameUseCase,
                     updatePlayerStatsUseCase = container.updatePlayerStatsUseCase
                 ) as T
             }

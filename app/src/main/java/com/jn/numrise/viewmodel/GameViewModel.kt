@@ -2,13 +2,13 @@ package com.jn.numrise.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jn.numrise.data.HistoryEntity
-import com.jn.numrise.domain.mapper.GameMapper
 import com.jn.numrise.domain.model.Difficulty
 import com.jn.numrise.domain.model.GameStatus
+import com.jn.numrise.domain.model.History
 import com.jn.numrise.domain.model.Level
 import com.jn.numrise.domain.model.Tile
 import com.jn.numrise.domain.repository.GameRepository
+import com.jn.numrise.domain.usecase.FinishGameUseCase
 import com.jn.numrise.domain.usecase.ProcessTileTapUseCase
 import com.jn.numrise.domain.usecase.StartGameUseCase
 import com.jn.numrise.domain.usecase.TapResult
@@ -24,11 +24,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class GameViewModel(
     private val repository: GameRepository,
     private val startGameUseCase: StartGameUseCase,
     private val processTileTapUseCase: ProcessTileTapUseCase,
+    private val finishGameUseCase: FinishGameUseCase,
     private val updatePlayerStatsUseCase: UpdatePlayerStatsUseCase
 ) : ViewModel() {
 
@@ -52,8 +54,8 @@ class GameViewModel(
             repository.getPlayerStats().collectLatest { stats ->
                 _uiState.update {
                     it.copy(
-                        coins = stats?.coins ?: 0,
-                        soundEnabled = stats?.soundEnabled ?: true
+                        coins = stats.coins,
+                        soundEnabled = stats.soundEnabled
                     )
                 }
             }
@@ -62,9 +64,8 @@ class GameViewModel(
 
     private fun observeLevels() {
         viewModelScope.launch {
-            repository.getAllLevels().collectLatest { entities ->
-                val domainLevels = entities.map { GameMapper.mapToLevel(it) }
-                _uiState.update { it.copy(levels = domainLevels) }
+            repository.getAllLevels().collectLatest { levels ->
+                _uiState.update { it.copy(levels = levels) }
             }
         }
     }
@@ -85,24 +86,61 @@ class GameViewModel(
             GameIntent.RestartGame -> restartGame()
             GameIntent.UseHint -> useHint()
             GameIntent.UseUndo -> useUndo()
+            GameIntent.BuyExtraTime -> useExtraTime()
             GameIntent.ResetToIdle -> resetToIdle()
             is GameIntent.BuyCoins -> buyCoins(intent.amount)
             is GameIntent.SetSoundEnabled -> setSoundEnabled(intent.enabled)
             GameIntent.StartDailyChallenge -> startDailyChallenge()
+            GameIntent.StartNext -> startNext()
+        }
+    }
+
+    private fun startNext() {
+        val currentState = _uiState.value
+        // Synchronously reset status to IDLE and clear tiles to prevent GamePlayScreen from 
+        // immediately navigating back to ResultScreen or showing a stale board.
+        _uiState.update { it.copy(status = GameStatus.IDLE, tiles = emptyList()) }
+
+        when {
+            currentState.currentLevel != null -> {
+                val level = currentState.currentLevel
+                viewModelScope.launch {
+                    val nextLevel = repository.getLevelById(level.id + 1)
+                    if (nextLevel != null && nextLevel.isUnlocked) {
+                        startGame(nextLevel)
+                    } else {
+                        startGame(level)
+                    }
+                }
+            }
+
+            currentState.currentDifficulty != null -> {
+                val difficulty = currentState.currentDifficulty
+                val nextDifficulty = Difficulty.entries.getOrNull(difficulty.ordinal + 1)
+                if (nextDifficulty != null) {
+                    startGame(nextDifficulty)
+                } else {
+                    startGame(difficulty)
+                }
+            }
+
+            else -> {
+                // If neither level nor difficulty (e.g. Daily Challenge), restart what was there
+                startDailyChallenge()
+            }
         }
     }
 
     private fun startDailyChallenge() {
-        // Daily challenge: Grid 4x4, Target 25, Time 40s
+        val initialState = startGameUseCase.executeDailyChallenge()
         tappedHistory.clear()
-        val tiles = startGameUseCase.execute(Difficulty.MEDIUM).tiles // Just a base
         _uiState.update {
             it.copy(
-                tiles = tiles,
-                gridSize = 4,
-                currentTarget = 1,
-                timerSeconds = 40,
-                status = GameStatus.PLAYING,
+                tiles = initialState.tiles,
+                gridSize = initialState.gridSize,
+                currentTarget = initialState.currentTarget,
+                timerSeconds = initialState.timerSeconds,
+                status = initialState.status,
                 score = 0,
                 currentDifficulty = null,
                 currentLevel = null,
@@ -160,7 +198,7 @@ class GameViewModel(
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (_uiState.value.timerSeconds > 0) {
-                delay(1000)
+                delay(1000.milliseconds)
                 _uiState.update { it.copy(timerSeconds = it.timerSeconds - 1) }
             }
             if (_uiState.value.status == GameStatus.PLAYING) {
@@ -186,7 +224,7 @@ class GameViewModel(
         val currentState = _uiState.value
         viewModelScope.launch {
             repository.saveHistory(
-                HistoryEntity(
+                History(
                     date = System.currentTimeMillis(),
                     score = score,
                     reward = reward,
@@ -239,42 +277,37 @@ class GameViewModel(
         viewModelScope.launch { _soundEvent.emit("win") }
         val currentState = _uiState.value
 
-        val timeLimit = currentState.currentDifficulty?.timeLimit ?: 60
-        val timeElapsed = timeLimit - currentState.timerSeconds
-        val timeBonus = currentState.timerSeconds * 10
-        val finalScore = currentState.score + timeBonus
-
-        val stars = when {
-            currentState.timerSeconds > timeLimit * 0.6 -> 3
-            currentState.timerSeconds > timeLimit * 0.3 -> 2
-            else -> 1
-        }
-
-        val reward = if (currentState.currentLevel != null) 20 + (stars * 10) else 10 + (stars * 5)
+        val result = finishGameUseCase.execute(
+            currentScore = currentState.score,
+            timerSeconds = currentState.timerSeconds,
+            currentDifficulty = currentState.currentDifficulty,
+            currentLevel = currentState.currentLevel,
+            finalTiles = finalTiles
+        )
 
         _uiState.update {
             it.copy(
-                tiles = finalTiles,
+                tiles = result.finalTiles,
                 status = GameStatus.FINISHED,
-                score = finalScore,
-                lastReward = reward
+                score = result.score,
+                lastReward = result.reward
             )
         }
 
-        saveHistory(finalScore, reward, true)
+        saveHistory(result.score, result.reward, true)
 
         viewModelScope.launch {
             currentState.currentLevel?.let { level ->
                 updatePlayerStatsUseCase.updateGameStats(
                     level = level,
-                    score = finalScore,
-                    timeElapsed = timeElapsed,
-                    stars = stars,
-                    rewardCoins = reward
+                    score = result.score,
+                    timeElapsed = result.timeElapsed,
+                    stars = result.stars,
+                    rewardCoins = result.reward
                 )
             } ?: run {
                 // Award coins for difficulty mode
-                updatePlayerStatsUseCase.addCoins(reward)
+                updatePlayerStatsUseCase.addCoins(result.reward)
             }
         }
     }
@@ -309,6 +342,17 @@ class GameViewModel(
                             score = maxOf(0, it.score - 100)
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun useExtraTime() {
+        val currentState = _uiState.value
+        if (currentState.status == GameStatus.PLAYING && currentState.coins >= 30) {
+            viewModelScope.launch {
+                if (updatePlayerStatsUseCase.spendCoins(30)) {
+                    _uiState.update { it.copy(timerSeconds = it.timerSeconds + 60) }
                 }
             }
         }

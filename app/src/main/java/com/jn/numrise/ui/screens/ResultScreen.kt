@@ -47,7 +47,7 @@ fun ResultScreen(
     onShop: () -> Unit
 ) {
     val titleColor = if (isWin) NeonGreen else NeonPink
-    val titleText = if (isWin) "LEVEL COMPLETE!" else "GAME OVER"
+    val titleText = if (isWin) "VICTORY" else "GAME OVER"
 
     Scaffold(
         topBar = {

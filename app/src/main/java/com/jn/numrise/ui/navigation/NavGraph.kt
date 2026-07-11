@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.jn.numrise.NumriseApplication
+import com.jn.numrise.di.LocalAppContainer
 import com.jn.numrise.domain.model.GameStatus
 import com.jn.numrise.ui.screens.CoinShopScreen
 import com.jn.numrise.ui.screens.DailyChallengeScreen
@@ -43,7 +43,7 @@ fun NumriseNavGraph(
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val container = (context.applicationContext as NumriseApplication).container
+    val container = LocalAppContainer.current
 
     NavHost(
         navController = navController,
@@ -87,8 +87,8 @@ fun NumriseNavGraph(
                 reward = uiState.lastReward,
                 isWin = uiState.status == GameStatus.FINISHED,
                 onNextLevel = {
-                    gameViewModel.onIntent(GameIntent.ResetToIdle)
-                    navController.navigate(Screen.DifficultySelect.route) {
+                    gameViewModel.onIntent(GameIntent.StartNext)
+                    navController.navigate(Screen.GamePlay.route) {
                         popUpTo(Screen.Home.route)
                     }
                 },

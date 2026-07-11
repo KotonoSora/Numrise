@@ -1,6 +1,5 @@
 package com.jn.numrise.domain.usecase
 
-import com.jn.numrise.domain.mapper.GameMapper
 import com.jn.numrise.domain.model.Level
 import com.jn.numrise.domain.repository.GameRepository
 import kotlinx.coroutines.flow.first
@@ -18,18 +17,18 @@ class UpdatePlayerStatsUseCase(private val repository: GameRepository) {
             bestTimeSeconds = minOf(level.bestTimeSeconds, timeElapsed),
             stars = maxOf(level.stars, stars)
         )
-        repository.updateLevel(GameMapper.mapToLevelEntity(updatedLevel))
+        repository.updateLevel(updatedLevel)
 
         // Unlock next level
-        repository.getLevelById(level.id + 1)?.let { nextLevelEntity ->
-            if (!nextLevelEntity.isUnlocked) {
-                repository.updateLevel(nextLevelEntity.copy(isUnlocked = true))
+        repository.getLevelById(level.id + 1)?.let { nextLevel ->
+            if (!nextLevel.isUnlocked) {
+                repository.updateLevel(nextLevel.copy(isUnlocked = true))
             }
         }
 
         // Award coins
         val stats = repository.getPlayerStats().first()
-        val currentCoins = stats?.coins ?: 0
+        val currentCoins = stats.coins
         repository.updateCoins(currentCoins + rewardCoins)
     }
 
@@ -39,13 +38,13 @@ class UpdatePlayerStatsUseCase(private val repository: GameRepository) {
 
     suspend fun addCoins(amount: Int) {
         val stats = repository.getPlayerStats().first()
-        val currentCoins = stats?.coins ?: 0
+        val currentCoins = stats.coins
         repository.updateCoins(currentCoins + amount)
     }
 
     suspend fun spendCoins(amount: Int): Boolean {
         val stats = repository.getPlayerStats().first()
-        val currentCoins = stats?.coins ?: 0
+        val currentCoins = stats.coins
         return if (currentCoins >= amount) {
             repository.updateCoins(currentCoins - amount)
             true
