@@ -10,8 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [LevelEntity::class, PlayerStatsEntity::class],
-    version = 1,
+    entities = [LevelEntity::class, PlayerStatsEntity::class, HistoryEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "numrise_database"
                 )
                     .addCallback(AppDatabaseCallback(scope))
+                    .fallbackToDestructiveMigration(false)
                     .build()
                 INSTANCE = instance
                 instance

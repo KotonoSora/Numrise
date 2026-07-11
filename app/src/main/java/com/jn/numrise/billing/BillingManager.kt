@@ -2,17 +2,17 @@ package com.jn.numrise.billing
 
 import android.app.Activity
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.PendingPurchasesParams
-import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.jn.numrise.data.LevelDao
+import com.jn.numrise.domain.repository.GameRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,24 +25,31 @@ import kotlinx.coroutines.withContext
 class BillingManager(
     private val context: Context,
     private val scope: CoroutineScope,
-    private val levelDao: LevelDao
+    private val repository: GameRepository
 ) : PurchasesUpdatedListener {
+
+    private val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     private val billingClient = BillingClient.newBuilder(context)
         .setListener(this)
         .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
         .build()
 
-    private val _products = MutableStateFlow<List<ProductDetails>>(emptyList())
-    val products: StateFlow<List<ProductDetails>> = _products.asStateFlow()
-
-    private val productIds = listOf(
-        "coins_100", "coins_500", "coins_1000", "coins_1500",
-        "coins_2000", "coins_2500", "coins_3000", "coins_3500", "coins_4000"
-    )
+    private val _products = MutableStateFlow<List<BillingProduct>>(emptyList())
+    val products: StateFlow<List<BillingProduct>> = _products.asStateFlow()
 
     init {
         startConnection()
+    }
+
+    private fun loadMockProducts() {
+        val mockProducts = BillingConstants.PRODUCT_IDS.map { id ->
+            BillingProduct(
+                productId = id,
+                price = BillingConstants.getPrice(id)
+            )
+        }
+        _products.value = mockProducts
     }
 
     private fun startConnection() {
@@ -50,12 +57,12 @@ class BillingManager(
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProducts()
+                } else if (isDebug) {
+                    loadMockProducts()
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                // Try to restart the connection on the next request to
-                // Google Play by calling the startConnection() method.
                 startConnection()
             }
         })
@@ -64,7 +71,7 @@ class BillingManager(
     private fun queryProducts() {
         val params = QueryProductDetailsParams.newBuilder()
             .setProductList(
-                productIds.map { id ->
+                BillingConstants.PRODUCT_IDS.map { id ->
                     QueryProductDetailsParams.Product.newBuilder()
                         .setProductId(id)
                         .setProductType(BillingClient.ProductType.INAPP)
@@ -75,23 +82,52 @@ class BillingManager(
 
         billingClient.queryProductDetailsAsync(params) { billingResult, result ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                _products.value = result.productDetailsList
+                val billingProducts = result.productDetailsList.map {
+                    BillingProduct(
+                        productId = it.productId,
+                        price = it.oneTimePurchaseOfferDetails?.formattedPrice ?: "N/A",
+                        productDetails = it
+                    )
+                }
+                if (billingProducts.isNotEmpty()) {
+                    _products.value = billingProducts
+                } else if (isDebug) {
+                    loadMockProducts()
+                }
+            } else if (isDebug) {
+                loadMockProducts()
             }
         }
     }
 
-    fun launchPurchaseFlow(activity: Activity, productDetails: ProductDetails) {
-        val productDetailsParamsList = listOf(
-            BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(productDetails)
+    fun launchPurchaseFlow(activity: Activity, product: BillingProduct) {
+        if (product.productDetails == null && isDebug) {
+            handleMockPurchase(product.productId)
+            return
+        }
+
+        product.productDetails?.let { productDetails ->
+            val productDetailsParamsList = listOf(
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails)
+                    .build()
+            )
+
+            val billingFlowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(productDetailsParamsList)
                 .build()
-        )
 
-        val billingFlowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(productDetailsParamsList)
-            .build()
+            billingClient.launchBillingFlow(activity, billingFlowParams)
+        }
+    }
 
-        billingClient.launchBillingFlow(activity, billingFlowParams)
+    private fun handleMockPurchase(productId: String) {
+        val amount = BillingConstants.getAmount(productId)
+        if (amount > 0) {
+            scope.launch {
+                updateCoinsInDb(amount)
+            }
+        }
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
@@ -110,19 +146,8 @@ class BillingManager(
 
             billingClient.consumeAsync(consumeParams) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    val productId = purchase.products.firstOrNull()
-                    val amount = when (productId) {
-                        "coins_100" -> 100
-                        "coins_500" -> 500
-                        "coins_1000" -> 1000
-                        "coins_1500" -> 1500
-                        "coins_2000" -> 2000
-                        "coins_2500" -> 2500
-                        "coins_3000" -> 3000
-                        "coins_3500" -> 3500
-                        "coins_4000" -> 4000
-                        else -> 0
-                    }
+                    val productId = purchase.products.firstOrNull() ?: ""
+                    val amount = BillingConstants.getAmount(productId)
                     if (amount > 0) {
                         scope.launch {
                             updateCoinsInDb(amount)
@@ -135,9 +160,9 @@ class BillingManager(
 
     private suspend fun updateCoinsInDb(amount: Int) {
         withContext(Dispatchers.IO) {
-            val currentStats = levelDao.getPlayerStats().first()
+            val currentStats = repository.getPlayerStats().first()
             val currentCoins = currentStats?.coins ?: 0
-            levelDao.updateCoins(currentCoins + amount)
+            repository.updateCoins(currentCoins + amount)
         }
     }
 }

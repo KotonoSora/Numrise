@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,76 +21,100 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.jn.numrise.model.GameStatus
-import com.jn.numrise.model.Tile
+import com.jn.numrise.domain.model.GameStatus
+import com.jn.numrise.domain.model.Tile
+import com.jn.numrise.domain.model.getTileColors
 import com.jn.numrise.ui.components.NeonButton
-import com.jn.numrise.ui.components.NeonIconButton
+import com.jn.numrise.ui.components.NeonHeaderBar
 import com.jn.numrise.ui.components.NeonText
 import com.jn.numrise.ui.theme.NeonCyan
 import com.jn.numrise.ui.theme.NeonGreen
-import com.jn.numrise.ui.theme.NeonPink
 import com.jn.numrise.ui.theme.NeonPurple
 import com.jn.numrise.ui.theme.NeonYellow
-import com.jn.numrise.ui.theme.PressStart2P
+import com.jn.numrise.ui.theme.NumriseTheme
+import com.jn.numrise.viewmodel.GameIntent
 import com.jn.numrise.viewmodel.GameViewModel
 
 @Composable
 fun GamePlayScreen(
     viewModel: GameViewModel,
-    onPause: () -> Unit,
-    onFinished: () -> Unit
+    onFinished: () -> Unit,
+    onShop: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val stats by viewModel.playerStats.collectAsState()
 
     // Navigation triggers
     LaunchedEffect(uiState.status) {
-        if (uiState.status == GameStatus.FINISHED) {
+        if (uiState.status == GameStatus.FINISHED || uiState.status == GameStatus.FAILED) {
             onFinished()
         }
     }
 
+    GamePlayContent(
+        tiles = uiState.tiles,
+        gridSize = uiState.gridSize,
+        timerText = uiState.timerFormatted,
+        score = uiState.score,
+        coins = uiState.coins,
+        highlightedTileId = uiState.highlightedTileId,
+        onTileClick = { viewModel.onIntent(GameIntent.TileTapped(it)) },
+        onShop = onShop,
+        onHint = { viewModel.onIntent(GameIntent.UseHint) },
+        onUndo = { viewModel.onIntent(GameIntent.UseUndo) },
+        onAddTime = { viewModel.onIntent(GameIntent.BuyExtraTime) }
+    )
+}
+
+@Composable
+fun GamePlayContent(
+    tiles: List<Tile>,
+    gridSize: Int,
+    timerText: String,
+    score: Int,
+    coins: Int,
+    highlightedTileId: Int?,
+    onTileClick: (Tile) -> Unit,
+    onShop: () -> Unit,
+    onHint: () -> Unit,
+    onUndo: () -> Unit,
+    onAddTime: () -> Unit
+) {
     Scaffold(
         topBar = {
             GameTopBar(
-                timerText = uiState.timerFormatted,
-                score = uiState.score,
-                coins = stats?.coins ?: 0,
-                onPauseClick = {
-                    viewModel.pauseGame()
-                    onPause()
-                }
+                timerText = timerText,
+                score = score,
+                coins = coins,
+                onBuyCoins = onShop,
+                onHint = onHint,
+                onUndo = onUndo,
+                onAddTime = onAddTime
             )
         },
-        bottomBar = {
-            GameBottomBar(
-                onHint = { viewModel.useHint() },
-                onUndo = { viewModel.useUndo() }
-            )
-        },
-        containerColor = Color.Black
+        containerColor = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -102,16 +124,19 @@ fun GamePlayScreen(
             contentAlignment = Alignment.Center
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(uiState.gridSize),
+                columns = GridCells.Fixed(gridSize),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(uiState.tiles, key = { it.id }) { tile ->
+                val tileColors = getTileColors()
+                items(tiles, key = { it.id }) { tile ->
+                    val colorIndex = tiles.indexOf(tile) % tileColors.size
                     NumberTile(
                         tile = tile,
-                        isHighlighted = tile.id == uiState.highlightedTileId,
-                        onClick = { viewModel.onTileTapped(tile) }
+                        tileColor = tileColors[colorIndex],
+                        isHighlighted = tile.id == highlightedTileId,
+                        onClick = { onTileClick(tile) }
                     )
                 }
             }
@@ -124,49 +149,34 @@ fun GameTopBar(
     timerText: String,
     score: Int,
     coins: Int,
-    onPauseClick: () -> Unit
+    onBuyCoins: () -> Unit,
+    onHint: () -> Unit,
+    onUndo: () -> Unit,
+    onAddTime: () -> Unit
 ) {
-    Column(modifier = Modifier
-        .statusBarsPadding()
-        .background(Color.Black)) {
-        Row(
+    Column(
+        modifier = Modifier
+            .statusBarsPadding()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        NeonHeaderBar(
+            coins = coins,
+            onShop = onBuyCoins,
+            onBack = null
+        )
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.MonetizationOn,
-                    contentDescription = null,
-                    tint = NeonYellow,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                NeonText(text = coins.toString(), fontSize = 12, color = NeonYellow)
-            }
-
-            NeonIconButton(
-                icon = Icons.Default.Pause,
-                onClick = onPauseClick,
-                tint = NeonPink
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Timer,
                     contentDescription = null,
                     tint = NeonCyan,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 NeonText(
@@ -183,33 +193,67 @@ fun GameTopBar(
                     tint = NeonGreen,
                     modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 NeonText(
                     text = "SCORE: $score",
-                    fontSize = 12,
-                    color = NeonGreen
+                    fontSize = 14,
+                    color = NeonGreen,
+                    autoResize = true,
+                    maxLines = 1
                 )
             }
         }
 
-        // Neon divider
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(NeonCyan.copy(alpha = 0.3f)))
+        // Power-ups moved here
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            NeonAssistButton(
+                icon = Icons.Default.Lightbulb,
+                label = "HINT",
+                color = NeonYellow,
+                enabled = coins >= 50,
+                onClick = onHint,
+                modifier = Modifier.weight(1f)
+            )
+            NeonAssistButton(
+                icon = Icons.AutoMirrored.Filled.Undo,
+                label = "UNDO",
+                color = NeonPurple,
+                enabled = coins >= 50,
+                onClick = onUndo,
+                modifier = Modifier.weight(1f)
+            )
+            NeonAssistButton(
+                icon = Icons.Default.Add,
+                label = "60s",
+                color = NeonCyan,
+                enabled = coins >= 30,
+                onClick = onAddTime,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
 @Composable
 fun NumberTile(
     tile: Tile,
+    tileColor: Color,
     isHighlighted: Boolean,
     onClick: () -> Unit
 ) {
+    // Determine the base color for the tile. tile.color was used before.
+    // User wants difference color per box.
+    val baseColor = tileColor
+
     val backgroundColor =
-        if (tile.isTapped) Color.DarkGray.copy(alpha = 0.3f) else tile.color.copy(alpha = 0.8f)
-    val borderColor = if (isHighlighted) Color.White else tile.color
-    val glowColor = if (isHighlighted) Color.White else tile.color
+        if (tile.isTapped) Color.DarkGray.copy(alpha = 0.2f) else baseColor.copy(alpha = 0.15f)
+    val borderColor = if (isHighlighted) Color.White else baseColor
+    val glowColor = if (isHighlighted) Color.White else baseColor
 
     Box(
         modifier = Modifier
@@ -218,60 +262,22 @@ fun NumberTile(
             .background(backgroundColor)
             .border(
                 width = if (isHighlighted) 3.dp else 2.dp,
-                color = borderColor,
+                color = borderColor.copy(alpha = if (tile.isTapped) 0.3f else 1f),
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable(enabled = !tile.isTapped) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         if (!tile.isTapped) {
-            Text(
+            NeonText(
                 text = tile.number.toString(),
-                style = TextStyle(
-                    fontFamily = PressStart2P,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    shadow = Shadow(
-                        color = glowColor,
-                        blurRadius = 8f
-                    )
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun GameBottomBar(
-    onHint: () -> Unit,
-    onUndo: () -> Unit
-) {
-    Column(modifier = Modifier.background(Color.Black)) {
-        // Neon divider
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(NeonCyan.copy(alpha = 0.3f)))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            NeonAssistButton(
-                icon = Icons.Default.Lightbulb,
-                label = "HINT (10)",
-                color = NeonYellow,
-                onClick = onHint
-            )
-            NeonAssistButton(
-                icon = Icons.AutoMirrored.Filled.Undo,
-                label = "UNDO (5)",
-                color = NeonPurple,
-                onClick = onUndo
+                fontSize = 20,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                hasShadow = false,
+                autoResize = true,
+                maxLines = 1,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
@@ -282,15 +288,49 @@ fun NeonAssistButton(
     icon: ImageVector,
     label: String,
     color: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
+    var lastClickTime by remember { mutableStateOf(0L) }
+
     NeonButton(
         text = label,
-        onClick = onClick,
+        onClick = {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastClickTime > 500) {
+                lastClickTime = currentTime
+                onClick()
+            }
+        },
         color = color,
         icon = icon,
-        height = 48,
+        height = 40,
         fontSize = 10,
-        modifier = Modifier.width(160.dp)
+        enabled = enabled,
+        modifier = modifier,
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GamePlayScreenPreview() {
+    val mockTiles = (1..9).map { i ->
+        Tile(i, i, Color.White, isTapped = i == 2)
+    }
+    NumriseTheme {
+        GamePlayContent(
+            tiles = mockTiles,
+            gridSize = 3,
+            timerText = "00:45",
+            score = 1200500,
+            coins = 150,
+            highlightedTileId = 3,
+            onTileClick = {},
+            onShop = {},
+            onHint = {},
+            onUndo = {},
+            onAddTime = {}
+        )
+    }
 }
