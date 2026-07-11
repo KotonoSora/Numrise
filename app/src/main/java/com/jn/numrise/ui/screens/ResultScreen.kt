@@ -15,80 +15,112 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jn.numrise.ui.components.NeonButton
+import com.jn.numrise.ui.components.NeonHeaderBar
 import com.jn.numrise.ui.components.NeonText
 import com.jn.numrise.ui.components.NeonTitle
 import com.jn.numrise.ui.theme.NeonCyan
 import com.jn.numrise.ui.theme.NeonGreen
 import com.jn.numrise.ui.theme.NeonPink
 import com.jn.numrise.ui.theme.NeonYellow
+import com.jn.numrise.ui.theme.NumriseTheme
 
 @Composable
 fun ResultScreen(
+    coins: Int,
     score: Int,
     time: String,
+    reward: Int,
+    isWin: Boolean = true,
     onNextLevel: () -> Unit,
     onRestart: () -> Unit,
-    onHome: () -> Unit
+    onHome: () -> Unit,
+    onShop: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        NeonTitle(
-            text = "LEVEL COMPLETE!",
-            fontSize = 24,
-            color = NeonGreen
-        )
+    val titleColor = if (isWin) NeonGreen else NeonPink
+    val titleText = if (isWin) "LEVEL COMPLETE!" else "GAME OVER"
 
-        Spacer(modifier = Modifier.height(48.dp))
+    Scaffold(
+        topBar = {
+            NeonHeaderBar(
+                coins = coins,
+                onShop = onShop
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize()
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            NeonTitle(
+                text = titleText,
+                fontSize = 28,
+                color = titleColor
+            )
 
-        ResultStatCard("SCORE", score.toString(), NeonCyan)
-        Spacer(modifier = Modifier.height(16.dp))
-        ResultStatCard("TIME", time, NeonYellow)
+            if (reward > 0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                NeonText(text = "+$reward COINS", fontSize = 16, color = NeonYellow)
+            }
 
-        Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        NeonButton(
-            text = "NEXT LEVEL",
-            onClick = onNextLevel,
-            color = NeonGreen,
-            icon = Icons.Default.SkipNext,
-            modifier = Modifier.fillMaxWidth(),
-            height = 56
-        )
+            ResultStatCard("SCORE", score.toString(), NeonCyan)
+            if (isWin) {
+                Spacer(modifier = Modifier.height(16.dp))
+                ResultStatCard("TIME", time, NeonYellow)
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-        NeonButton(
-            text = "RESTART",
-            onClick = onRestart,
-            color = NeonCyan,
-            icon = Icons.Default.Refresh,
-            modifier = Modifier.fillMaxWidth(),
-            height = 56
-        )
+            if (isWin) {
+                NeonButton(
+                    text = "NEXT LEVEL",
+                    onClick = onNextLevel,
+                    color = NeonGreen,
+                    icon = Icons.Default.SkipNext,
+                    modifier = Modifier.fillMaxWidth(),
+                    height = 56
+                )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-        NeonButton(
-            text = "HOME",
-            onClick = onHome,
-            color = NeonPink,
-            icon = Icons.Default.Home,
-            modifier = Modifier.fillMaxWidth(),
-            height = 56
-        )
+            NeonButton(
+                text = "RETRY",
+                onClick = onRestart,
+                color = NeonCyan,
+                icon = Icons.Default.Refresh,
+                modifier = Modifier.fillMaxWidth(),
+                height = 56
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            NeonButton(
+                text = "HOME",
+                onClick = onHome,
+                color = NeonPink,
+                icon = Icons.Default.Home,
+                modifier = Modifier.fillMaxWidth(),
+                height = 56
+            )
+        }
     }
 }
 
@@ -111,8 +143,46 @@ fun ResultStatCard(label: String, value: String, color: Color) {
             NeonText(
                 text = value,
                 fontSize = 24,
-                color = Color.White
+                color = Color.White,
+                autoResize = true,
+                maxLines = 1
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ResultScreenWinPreview() {
+    NumriseTheme {
+        ResultScreen(
+            coins = 500,
+            score = 15400,
+            time = "00:45",
+            reward = 50,
+            isWin = true,
+            onNextLevel = {},
+            onRestart = {},
+            onHome = {},
+            onShop = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ResultScreenFailPreview() {
+    NumriseTheme {
+        ResultScreen(
+            coins = 500,
+            score = 2500,
+            time = "01:00",
+            reward = 0,
+            isWin = false,
+            onNextLevel = {},
+            onRestart = {},
+            onHome = {},
+            onShop = {}
+        )
     }
 }

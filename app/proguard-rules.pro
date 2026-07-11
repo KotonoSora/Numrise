@@ -91,5 +91,5 @@
 # Numrise Data Models (Crucial for Obfuscation)
 # -----------------------------------------------------------------------------------
 # Prevent Moshi/Room from failing due to renamed fields
--keepclassmembers class com.jn.numrise.data.model.** { *; }
--keep @com.squareup.moshi.JsonClass class com.jn.numrise.data.model.** { *; }
+-keepclassmembers class com.jn.numrise.model.** { *; }
+-keep @com.squareup.moshi.JsonClass class com.jn.numrise.model.** { *; }

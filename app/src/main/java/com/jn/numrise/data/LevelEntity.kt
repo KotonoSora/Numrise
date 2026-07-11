@@ -16,5 +16,6 @@ data class LevelEntity(
 @Entity(tableName = "player_stats")
 data class PlayerStatsEntity(
     @PrimaryKey val id: Int = 1, // Singleton row
-    val coins: Int = 100
+    val coins: Int = 100,
+    val soundEnabled: Boolean = true
 )

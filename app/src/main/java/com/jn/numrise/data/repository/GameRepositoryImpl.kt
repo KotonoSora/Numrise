@@ -1,5 +1,6 @@
 package com.jn.numrise.data.repository
 
+import com.jn.numrise.data.HistoryEntity
 import com.jn.numrise.data.LevelDao
 import com.jn.numrise.data.LevelEntity
 import com.jn.numrise.data.PlayerStatsEntity
@@ -16,4 +17,10 @@ class GameRepositoryImpl(private val levelDao: LevelDao) : GameRepository {
     override fun getPlayerStats(): Flow<PlayerStatsEntity?> = levelDao.getPlayerStats()
 
     override suspend fun updateCoins(newCoins: Int) = levelDao.updateCoins(newCoins)
+
+    override suspend fun updateSoundEnabled(enabled: Boolean) = levelDao.updateSoundEnabled(enabled)
+
+    override suspend fun saveHistory(history: HistoryEntity) = levelDao.insertHistory(history)
+
+    override fun getAllHistory(): Flow<List<HistoryEntity>> = levelDao.getAllHistory()
 }

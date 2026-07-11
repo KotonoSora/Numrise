@@ -1,5 +1,6 @@
 package com.jn.numrise.viewmodel
 
+import com.jn.numrise.data.HistoryEntity
 import com.jn.numrise.domain.model.Difficulty
 import com.jn.numrise.domain.model.GameStatus
 import com.jn.numrise.domain.model.Level
@@ -18,7 +19,9 @@ data class GameUiState(
     val highlightedTileId: Int? = null,
     val coins: Int = 0,
     val levels: List<Level> = emptyList(),
-    val soundEnabled: Boolean = true
+    val soundEnabled: Boolean = true,
+    val history: List<HistoryEntity> = emptyList(),
+    val lastReward: Int = 0
 ) {
     val timerFormatted: String
         get() = String.format(
@@ -33,12 +36,11 @@ sealed class GameIntent {
     data class StartWithDifficulty(val difficulty: Difficulty) : GameIntent()
     data class StartWithLevel(val level: Level) : GameIntent()
     data class TileTapped(val tile: Tile) : GameIntent()
-    object PauseGame : GameIntent()
-    object ResumeGame : GameIntent()
     object RestartGame : GameIntent()
     object UseHint : GameIntent()
     object UseUndo : GameIntent()
     object ResetToIdle : GameIntent()
     data class BuyCoins(val amount: Int) : GameIntent()
     data class SetSoundEnabled(val enabled: Boolean) : GameIntent()
+    object StartDailyChallenge : GameIntent()
 }

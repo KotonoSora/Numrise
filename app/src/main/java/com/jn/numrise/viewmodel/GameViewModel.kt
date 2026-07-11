@@ -2,7 +2,7 @@ package com.jn.numrise.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jn.numrise.audio.SoundManager
+import com.jn.numrise.data.HistoryEntity
 import com.jn.numrise.domain.mapper.GameMapper
 import com.jn.numrise.domain.model.Difficulty
 import com.jn.numrise.domain.model.GameStatus
@@ -15,8 +15,11 @@ import com.jn.numrise.domain.usecase.TapResult
 import com.jn.numrise.domain.usecase.UpdatePlayerStatsUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -26,12 +29,14 @@ class GameViewModel(
     private val repository: GameRepository,
     private val startGameUseCase: StartGameUseCase,
     private val processTileTapUseCase: ProcessTileTapUseCase,
-    private val updatePlayerStatsUseCase: UpdatePlayerStatsUseCase,
-    private val soundManager: SoundManager
+    private val updatePlayerStatsUseCase: UpdatePlayerStatsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+
+    private val _soundEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val soundEvent: SharedFlow<String> = _soundEvent.asSharedFlow()
 
     private var timerJob: Job? = null
     private val tappedHistory = mutableListOf<Tile>()
@@ -39,12 +44,18 @@ class GameViewModel(
     init {
         observePlayerStats()
         observeLevels()
+        observeHistory()
     }
 
     private fun observePlayerStats() {
         viewModelScope.launch {
             repository.getPlayerStats().collectLatest { stats ->
-                _uiState.update { it.copy(coins = stats?.coins ?: 0) }
+                _uiState.update {
+                    it.copy(
+                        coins = stats?.coins ?: 0,
+                        soundEnabled = stats?.soundEnabled ?: true
+                    )
+                }
             }
         }
     }
@@ -58,25 +69,53 @@ class GameViewModel(
         }
     }
 
+    private fun observeHistory() {
+        viewModelScope.launch {
+            repository.getAllHistory().collectLatest { history ->
+                _uiState.update { it.copy(history = history) }
+            }
+        }
+    }
+
     fun onIntent(intent: GameIntent) {
         when (intent) {
             is GameIntent.StartWithDifficulty -> startGame(intent.difficulty)
             is GameIntent.StartWithLevel -> startGame(intent.level)
             is GameIntent.TileTapped -> onTileTapped(intent.tile)
-            GameIntent.PauseGame -> pauseGame()
-            GameIntent.ResumeGame -> resumeGame()
             GameIntent.RestartGame -> restartGame()
             GameIntent.UseHint -> useHint()
             GameIntent.UseUndo -> useUndo()
             GameIntent.ResetToIdle -> resetToIdle()
             is GameIntent.BuyCoins -> buyCoins(intent.amount)
             is GameIntent.SetSoundEnabled -> setSoundEnabled(intent.enabled)
+            GameIntent.StartDailyChallenge -> startDailyChallenge()
         }
     }
 
+    private fun startDailyChallenge() {
+        // Daily challenge: Grid 4x4, Target 25, Time 40s
+        tappedHistory.clear()
+        val tiles = startGameUseCase.execute(Difficulty.MEDIUM).tiles // Just a base
+        _uiState.update {
+            it.copy(
+                tiles = tiles,
+                gridSize = 4,
+                currentTarget = 1,
+                timerSeconds = 40,
+                status = GameStatus.PLAYING,
+                score = 0,
+                currentDifficulty = null,
+                currentLevel = null,
+                highlightedTileId = null
+            )
+        }
+        startCountdown()
+    }
+
     private fun setSoundEnabled(enabled: Boolean) {
-        soundManager.isEnabled = enabled
-        _uiState.update { it.copy(soundEnabled = enabled) }
+        viewModelScope.launch {
+            updatePlayerStatsUseCase.setSoundEnabled(enabled)
+        }
     }
 
     private fun startGame(difficulty: Difficulty) {
@@ -132,19 +171,30 @@ class GameViewModel(
 
     private fun failGame() {
         timerJob?.cancel()
-        soundManager.play("error")
-        _uiState.update { it.copy(status = GameStatus.FAILED) }
+        viewModelScope.launch { _soundEvent.emit("error") }
+        val currentState = _uiState.value
+        _uiState.update { it.copy(status = GameStatus.FAILED, lastReward = 0) }
+
+        saveHistory(
+            score = currentState.score,
+            reward = 0,
+            isWin = false
+        )
     }
 
-    private fun pauseGame() {
-        timerJob?.cancel()
-        _uiState.update { it.copy(status = GameStatus.PAUSED) }
-    }
-
-    private fun resumeGame() {
-        if (_uiState.value.status == GameStatus.PAUSED) {
-            _uiState.update { it.copy(status = GameStatus.PLAYING) }
-            startCountdown()
+    private fun saveHistory(score: Int, reward: Int, isWin: Boolean) {
+        val currentState = _uiState.value
+        viewModelScope.launch {
+            repository.saveHistory(
+                HistoryEntity(
+                    date = System.currentTimeMillis(),
+                    score = score,
+                    reward = reward,
+                    levelId = currentState.currentLevel?.id,
+                    difficulty = currentState.currentDifficulty?.name,
+                    isWin = isWin
+                )
+            )
         }
     }
 
@@ -161,7 +211,7 @@ class GameViewModel(
 
         when (result) {
             is TapResult.Correct -> {
-                soundManager.play("tap")
+                viewModelScope.launch { _soundEvent.emit("tap") }
                 tappedHistory.add(tile)
                 _uiState.update {
                     it.copy(
@@ -172,10 +222,12 @@ class GameViewModel(
                     )
                 }
             }
+
             is TapResult.Incorrect -> {
-                soundManager.play("error")
+                viewModelScope.launch { _soundEvent.emit("error") }
                 _uiState.update { it.copy(score = result.newScore) }
             }
+
             is TapResult.Finished -> {
                 finishGame(result.finalTiles)
             }
@@ -184,7 +236,7 @@ class GameViewModel(
 
     private fun finishGame(finalTiles: List<Tile>) {
         timerJob?.cancel()
-        soundManager.play("win")
+        viewModelScope.launch { _soundEvent.emit("win") }
         val currentState = _uiState.value
 
         val timeLimit = currentState.currentDifficulty?.timeLimit ?: 60
@@ -198,13 +250,18 @@ class GameViewModel(
             else -> 1
         }
 
+        val reward = if (currentState.currentLevel != null) 20 + (stars * 10) else 10 + (stars * 5)
+
         _uiState.update {
             it.copy(
                 tiles = finalTiles,
                 status = GameStatus.FINISHED,
-                score = finalScore
+                score = finalScore,
+                lastReward = reward
             )
         }
+
+        saveHistory(finalScore, reward, true)
 
         viewModelScope.launch {
             currentState.currentLevel?.let { level ->
@@ -212,22 +269,23 @@ class GameViewModel(
                     level = level,
                     score = finalScore,
                     timeElapsed = timeElapsed,
-                    stars = stars
+                    stars = stars,
+                    rewardCoins = reward
                 )
             } ?: run {
                 // Award coins for difficulty mode
-                updatePlayerStatsUseCase.addCoins(10 + (stars * 5))
+                updatePlayerStatsUseCase.addCoins(reward)
             }
         }
     }
 
     private fun useHint() {
         val currentState = _uiState.value
-        if (currentState.status == GameStatus.PLAYING && currentState.coins >= 10) {
+        if (currentState.status == GameStatus.PLAYING && currentState.coins >= 50) {
             val targetTile = currentState.tiles.find { it.number == currentState.currentTarget }
             if (targetTile != null) {
                 viewModelScope.launch {
-                    if (updatePlayerStatsUseCase.spendCoins(10)) {
+                    if (updatePlayerStatsUseCase.spendCoins(50)) {
                         _uiState.update { it.copy(highlightedTileId = targetTile.id) }
                     }
                 }
@@ -237,9 +295,9 @@ class GameViewModel(
 
     private fun useUndo() {
         val currentState = _uiState.value
-        if (currentState.status == GameStatus.PLAYING && currentState.coins >= 5 && tappedHistory.isNotEmpty()) {
+        if (currentState.status == GameStatus.PLAYING && currentState.coins >= 50 && tappedHistory.isNotEmpty()) {
             viewModelScope.launch {
-                if (updatePlayerStatsUseCase.spendCoins(5)) {
+                if (updatePlayerStatsUseCase.spendCoins(50)) {
                     val lastTile = tappedHistory.removeAt(tappedHistory.size - 1)
                     val updatedTiles = currentState.tiles.map {
                         if (it.id == lastTile.id) it.copy(isTapped = false) else it
@@ -264,16 +322,19 @@ class GameViewModel(
 
     private fun restartGame() {
         val state = _uiState.value
-        state.currentDifficulty?.let { startGame(it) } 
+        state.currentDifficulty?.let { startGame(it) }
             ?: state.currentLevel?.let { startGame(it) }
     }
 
     private fun resetToIdle() {
-        _uiState.update { GameUiState() }
+        _uiState.update { current ->
+            GameUiState(
+                coins = current.coins,
+                soundEnabled = current.soundEnabled,
+                levels = current.levels,
+                history = current.history
+            )
+        }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        soundManager.release()
-    }
 }

@@ -1,5 +1,6 @@
 package com.jn.numrise.domain.repository
 
+import com.jn.numrise.data.HistoryEntity
 import com.jn.numrise.data.LevelEntity
 import com.jn.numrise.data.PlayerStatsEntity
 import kotlinx.coroutines.flow.Flow
@@ -10,4 +11,7 @@ interface GameRepository {
     suspend fun updateLevel(level: LevelEntity)
     fun getPlayerStats(): Flow<PlayerStatsEntity?>
     suspend fun updateCoins(newCoins: Int)
+    suspend fun updateSoundEnabled(enabled: Boolean)
+    suspend fun saveHistory(history: HistoryEntity)
+    fun getAllHistory(): Flow<List<HistoryEntity>>
 }

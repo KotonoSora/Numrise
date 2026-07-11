@@ -12,10 +12,10 @@ class GameViewModelFactory(private val container: AppContainer) : ViewModelProvi
                     repository = container.gameRepository,
                     startGameUseCase = container.startGameUseCase,
                     processTileTapUseCase = container.processTileTapUseCase,
-                    updatePlayerStatsUseCase = container.updatePlayerStatsUseCase,
-                    soundManager = container.soundManager
+                    updatePlayerStatsUseCase = container.updatePlayerStatsUseCase
                 ) as T
             }
+
             modelClass.isAssignableFrom(CoinShopViewModel::class.java) -> {
                 CoinShopViewModel(
                     billingManager = container.billingManager,
@@ -23,6 +23,7 @@ class GameViewModelFactory(private val container: AppContainer) : ViewModelProvi
                     updatePlayerStatsUseCase = container.updatePlayerStatsUseCase
                 ) as T
             }
+
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }

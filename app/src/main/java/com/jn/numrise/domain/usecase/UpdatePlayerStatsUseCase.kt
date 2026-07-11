@@ -10,7 +10,8 @@ class UpdatePlayerStatsUseCase(private val repository: GameRepository) {
         level: Level,
         score: Int,
         timeElapsed: Int,
-        stars: Int
+        stars: Int,
+        rewardCoins: Int
     ) {
         val updatedLevel = level.copy(
             highScore = maxOf(level.highScore, score),
@@ -29,8 +30,11 @@ class UpdatePlayerStatsUseCase(private val repository: GameRepository) {
         // Award coins
         val stats = repository.getPlayerStats().first()
         val currentCoins = stats?.coins ?: 0
-        val rewardCoins = 10 + (stars * 5)
         repository.updateCoins(currentCoins + rewardCoins)
+    }
+
+    suspend fun setSoundEnabled(enabled: Boolean) {
+        repository.updateSoundEnabled(enabled)
     }
 
     suspend fun addCoins(amount: Int) {

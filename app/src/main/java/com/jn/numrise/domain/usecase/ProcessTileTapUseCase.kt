@@ -35,7 +35,9 @@ class ProcessTileTapUseCase {
 }
 
 sealed class TapResult {
-    data class Correct(val updatedTiles: List<Tile>, val nextTarget: Int, val newScore: Int) : TapResult()
+    data class Correct(val updatedTiles: List<Tile>, val nextTarget: Int, val newScore: Int) :
+        TapResult()
+
     data class Incorrect(val newScore: Int) : TapResult()
     data class Finished(val finalTiles: List<Tile>) : TapResult()
 }

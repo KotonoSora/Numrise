@@ -29,4 +29,13 @@ interface LevelDao {
 
     @Query("UPDATE player_stats SET coins = :newCoins WHERE id = 1")
     suspend fun updateCoins(newCoins: Int)
+
+    @Query("UPDATE player_stats SET soundEnabled = :enabled WHERE id = 1")
+    suspend fun updateSoundEnabled(enabled: Boolean)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertHistory(history: HistoryEntity)
+
+    @Query("SELECT * FROM game_history ORDER BY date DESC")
+    fun getAllHistory(): Flow<List<HistoryEntity>>
 }
