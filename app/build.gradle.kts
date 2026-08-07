@@ -12,9 +12,9 @@ configure<ApplicationExtension> {
 
     defaultConfig {
         applicationId = "com.jn.numrise"
-        minSdk = 30
-        versionCode = 1
-        versionName = "1.0.0"
+        minSdk = 24
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,34 +54,18 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.coil.compose)
-    implementation(libs.retrofit)
-    implementation(libs.converter.moshi)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.accompanist.permissions)
-    implementation(libs.play.services.location)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-    implementation(libs.androidx.camera.core)
-    implementation(libs.logging.interceptor)
-    implementation(libs.okhttp)
-    implementation(libs.moshi.kotlin)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.material)
     implementation(libs.billing.ktx)
+    implementation(libs.google.material)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.core)
-    testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.runner)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    "ksp"(libs.androidx.room.compiler)
-    "ksp"(libs.moshi.kotlin.codegen)
+    ksp(libs.androidx.room.compiler)
 }

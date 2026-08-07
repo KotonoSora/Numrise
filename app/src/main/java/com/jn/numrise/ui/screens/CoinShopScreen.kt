@@ -141,7 +141,7 @@ fun CoinShopScreenPreview() {
             iconRes = BillingConstants.getIcon(id),
             productId = id
         )
-    }
+    }.sortedBy { it.amount }
     NumriseTheme {
         CoinShopScreen(
             coins = 250,
