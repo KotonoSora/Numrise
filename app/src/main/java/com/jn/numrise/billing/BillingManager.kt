@@ -48,7 +48,7 @@ class BillingManager(
                 productId = id,
                 price = BillingConstants.getPrice(id)
             )
-        }
+        }.sortedBy { BillingConstants.getAmount(it.productId) }
         _products.value = mockProducts
     }
 
@@ -88,7 +88,7 @@ class BillingManager(
                         price = it.oneTimePurchaseOfferDetails?.formattedPrice ?: "N/A",
                         productDetails = it
                     )
-                }
+                }.sortedBy { BillingConstants.getAmount(it.productId) }
                 if (billingProducts.isNotEmpty()) {
                     _products.value = billingProducts
                 } else if (isDebug) {
