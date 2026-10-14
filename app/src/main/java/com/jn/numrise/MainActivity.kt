@@ -2,59 +2,49 @@ package com.jn.numrise
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.jn.numrise.di.LocalAppContainer
-import com.jn.numrise.ui.navigation.NumriseNavGraph
-import com.jn.numrise.ui.theme.NumriseTheme
-import com.jn.numrise.viewmodel.GameViewModel
-import com.jn.numrise.viewmodel.GameViewModelFactory
-import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import local.numrise.ui.di.AppContainerHost
+import local.numrise.ui.di.AppViewModelFactory
+import local.numrise.ui.di.LocalAppContainer
+import local.numrise.ui.infrastructure.audio.LocalSoundManager
+import local.numrise.ui.infrastructure.audio.SoundManager
+import local.numrise.ui.presentation.MainApp
+import local.numrise.ui.presentation.theme.NumriseTheme
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-        )
+        enableEdgeToEdge()
+
+        val container = (application as AppContainerHost).container
 
         setContent {
-            val container = (application as NumriseApplication).container
+            val soundManager = remember { SoundManager(applicationContext) }
 
-            CompositionLocalProvider(LocalAppContainer provides container) {
-                val gameViewModel: GameViewModel by viewModels {
-                    GameViewModelFactory(container)
-                }
+            DisposableEffect(Unit) {
+                onDispose { soundManager.release() }
+            }
 
-                val soundManager = container.soundManager
-                val uiState by gameViewModel.uiState.collectAsState()
-                val soundEnabled = uiState.soundEnabled
-
-                LaunchedEffect(soundEnabled) {
-                    gameViewModel.soundEvent.collectLatest { soundName ->
-                        if (soundEnabled) {
-                            soundManager.play(soundName)
-                        }
-                    }
-                }
-
-                DisposableEffect(Unit) {
-                    onDispose {
-                        // soundManager is managed by AppContainer now
-                    }
-                }
-
+            CompositionLocalProvider(
+                LocalSoundManager provides soundManager,
+                LocalAppContainer provides container
+            ) {
                 NumriseTheme {
-                    NumriseNavGraph(gameViewModel = gameViewModel)
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        val factory = remember(container) { AppViewModelFactory(container) }
+                        MainApp(factory = factory)
+                    }
                 }
             }
         }
