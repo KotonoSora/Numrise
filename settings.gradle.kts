@@ -24,3 +24,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "Numrise"
 include(":app")
+include(":numrise-engine")
+include(":core-billing")
+include(":core-shop-coins")
+include(":core-ui")
+include(":numrise-shop")
+include(":numrise-ui")
